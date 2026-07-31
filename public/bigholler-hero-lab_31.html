@@ -1,0 +1,1300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Big Holler New Site</title>
+
+<!--
+╔══════════════════════════════════════════════════════════════════════════╗
+║  BIG HOLLER — HOMEPAGE PROTOTYPE                                         ║
+║  Single-file lab build. Destination: Astro static -> Cloudflare Pages.   ║
+╚══════════════════════════════════════════════════════════════════════════╝
+
+  WHAT DOES NOT SHIP
+  ------------------
+  1. The GRADE LAB panel (#lab) — dev-only colour/crop sliders. Delete.
+  2. The BH_TRACK hostname guard — Astro serves only the real host.
+  3. This comment block.
+
+  PAGE ORDER
+  ----------
+  hero (sticky) > about > music > shows > press > gallery > merch
+  > finale signup (photo) > footer/contact
+  Sections scroll OVER the pinned hero; each is opaque + z-index 10.
+
+  A/SEO GATE (SOP §2) — CURRENT STATUS
+  ------------------------------------
+  PASS  one <h1>, clean heading order, real landmarks, lang="en"
+  PASS  every <img> carries an alt attribute
+  PASS  JSON-LD parses clean
+  FAIL  merch / gallery / press-thumbs / socials are JS-injected -> these
+        are BLANK in view-source. Must render from content collections at
+        build time in Astro. This is the single biggest gate blocker.
+  FAIL  no canonical, no meta description, no OG/Twitter tags
+  FAIL  schema has no @id entity graph and no sameAs (entity disambiguation)
+  TODO  robots.txt (allow GPTBot/ClaudeBot/PerplexityBot/Google-Extended)
+  TODO  llms.txt
+  TODO  images are camera-original JPEGs off raw.githubusercontent —
+        move to src/assets/ + Astro <Image> (AVIF/WebP srcset) for LCP
+  TODO  alt text on the 4 session photos is generic placeholder text
+
+  CONTENT STILL PLACEHOLDER
+  -------------------------
+  press quotes · show dates/times/tickets · all 7 social URLs · GA4 ID
+  · booking+press emails · merch image->product mapping · gallery photos
+  · contact + finale form endpoints (Cloudflare Pages Function -> GHL/beehiiv)
+-->
+
+<!-- ════════ TRACKING ════════════════════════════════════════════════════
+     PROTOTYPE GUARD: pixels only fire on the live host so lab traffic
+     doesn't pollute GA4/Meta. Delete this block when porting to Astro.
+-->
+<script>
+  window.BH_TRACK = /(^|\.)bighollerband\.com$/.test(location.hostname);
+</script>
+
+<!-- OTTO / Search Atlas — must stay in <head>, unmodified, not deferred.
+     It rewrites the DOM for SEO, so it has to run before paint. -->
+<script nowprocket nitro-exclude type="text/javascript" id="sa-dynamic-optimization"
+  data-uuid="f2876f56-fbb6-4f41-b471-4ff1182485ea"
+  src="https://dashboard.searchatlas.com/scripts/dynamic_optimization.js"></script>
+
+<!-- GA4 — replace G-XXXXXXXXXX with your Measurement ID.
+     If GA4 already fires inside GTM-5D6G8HNT, DELETE this block instead;
+     running both double-counts every pageview. -->
+<script>
+if (window.BH_TRACK) {
+  const GA4_ID = 'G-XXXXXXXXXX';
+  const s = document.createElement('script');
+  s.async = true;
+  s.src = 'https://www.googletagmanager.com/gtag/js?id=' + GA4_ID;
+  document.head.appendChild(s);
+  window.dataLayer = window.dataLayer || [];
+  window.gtag = function(){ dataLayer.push(arguments); };
+  gtag('js', new Date());
+  gtag('config', GA4_ID);
+}
+</script>
+
+<!-- Google Tag Manager -->
+<script>
+if (window.BH_TRACK) {
+(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});
+var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';
+j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-5D6G8HNT');
+}
+</script>
+
+<!-- Meta Pixel -->
+<script>
+if (window.BH_TRACK) {
+!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
+n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}
+(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
+fbq('init','631018780015519');
+fbq('track','PageView');
+}
+</script>
+<!-- ════════ END TRACKING ════════════════════════════════════════════ -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0d0a07; --ink-lift:#16110c;
+  --amber:#c47d3a; --amber-hot:#e09a4f;
+  --cream:#e8dcc8; --cream-dim:#8a8073;
+  --rule:rgba(232,220,200,.14);
+  --display:"Playfair Display",Georgia,serif;
+  --body:"Inter",system-ui,sans-serif;
+  --ease-holler:cubic-bezier(.19,1,.22,1);
+
+/* ================== DESIGN TOKENS — locked. Change here, never inline.
+   ------------------------------------------------------------------ */
+  --nav-h:4.75rem; --stagger:140ms;
+  /* warm tile the white Printify backgrounds multiply into. dial toward
+     #fff for subtler, toward --cream for warmer. */
+  --merch-tile:#efe6d6;
+  /* lands on #e8dbc3 — within 5/255 of --cream. cross-origin CSS masks are blocked,
+     so a filter chain is the only way to tint a remote PNG. */
+  --tint-cream:brightness(0) invert(78%) sepia(50%) saturate(90%);
+
+  --grade-warmth:.52; --grade-sat:.94;
+  --grade-bright:.84; --grade-contrast:1.03;
+  --crop-y:91%; --vignette:.52;
+}
+
+*,*::before,*::after{ box-sizing:border-box; }
+html{ scroll-behavior:smooth; }
+body{ margin:0; background:var(--ink); color:var(--cream);
+  font-family:var(--body); font-weight:300; line-height:1.6; -webkit-font-smoothing:antialiased; }
+h1,h2{ font-family:var(--display); font-weight:700; line-height:1.05; margin:0; }
+
+/* ========================== SKIP LINK — first focusable element, a11y.
+   ------------------------------------------------------------------ */
+.skip{ position:absolute; left:-9999px; top:0; z-index:999; background:var(--amber);
+  color:var(--ink); padding:.75rem 1.25rem; font-weight:600; text-decoration:none; }
+.skip:focus{ left:.5rem; top:.5rem; }
+:focus-visible{ outline:2px solid var(--amber-hot); outline-offset:3px; }
+
+/* ---------- HERO ---------- */
+.hero{ position:sticky; top:0; z-index:1; height:100svh; min-height:34rem;
+  display:grid; place-items:center; overflow:hidden; background:var(--ink); }
+.hero-photo{ position:absolute; inset:0; width:100%; height:100%;
+  object-fit:cover; object-position:center var(--crop-y);
+  filter:saturate(var(--grade-sat)) brightness(var(--grade-bright)) contrast(var(--grade-contrast));
+  animation:lift 2000ms var(--ease-holler) both; display:none; }
+.hero-photo.loaded{ display:block; }
+.hero-fallback{ position:absolute; inset:0;
+  background:radial-gradient(120% 90% at 50% 15%, rgba(196,125,58,.30), transparent 58%),
+             radial-gradient(80% 60% at 78% 82%, rgba(140,70,30,.28), transparent 60%),
+             linear-gradient(180deg,#1c140d 0%,#0d0a07 72%);
+  animation:lift 2000ms var(--ease-holler) both; }
+@keyframes lift{ from{opacity:0;transform:scale(1.09);filter:brightness(.2) saturate(.4);}
+  to{opacity:1;transform:scale(1);} }
+.hero-grade{ position:absolute; inset:0; pointer-events:none; mix-blend-mode:soft-light;
+  background:linear-gradient(180deg, rgba(196,125,58,var(--grade-warmth)) 0%,
+    rgba(120,60,25,calc(var(--grade-warmth)*.55)) 45%, rgba(13,10,7,.5) 100%); }
+.hero-grain{ position:absolute; inset:0; pointer-events:none; opacity:.18; mix-blend-mode:overlay; }
+.hero-vignette{ position:absolute; inset:0; pointer-events:none;
+  background:radial-gradient(68% 62% at 50% 44%, transparent 34%, rgba(13,10,7,var(--vignette)) 100%); }
+
+@supports (animation-timeline: view()){
+  @media (prefers-reduced-motion: no-preference){
+    .hero-photo,.hero-fallback{
+      animation:lift 2000ms var(--ease-holler) both, recede linear both;
+      animation-timeline:auto, scroll(root block);
+      /* starts at 55svh, not 0 — the photo holds its colour through the
+         first half of the scroll, then eases down only as it's buried. */
+      animation-range:normal, 55svh 105svh; }
+    @keyframes recede{ to{filter:brightness(.62) saturate(.72); transform:scale(1.04);} }
+  }
+}
+
+/* ---------- DROP ZONE ---------- */
+.drop{ position:absolute; inset:0; z-index:4; display:grid; place-items:center;
+  background:rgba(13,10,7,.55); backdrop-filter:blur(2px);
+  border:1px dashed rgba(232,220,200,.28); margin:1.25rem; cursor:pointer;
+  text-align:center; padding:2rem;
+  transition:opacity 400ms var(--ease-holler),
+             background-color 620ms var(--ease-holler),
+             backdrop-filter 620ms var(--ease-holler),
+             border-color 620ms var(--ease-holler); }
+.drop.hot{ background:rgba(196,125,58,.22); border-color:var(--amber-hot); }
+.drop.gone{ opacity:0; pointer-events:none; }
+.drop p{ margin:0; font-size:.72rem; letter-spacing:.24em; text-transform:uppercase;
+  color:var(--cream); opacity:.9; }
+.drop small{ display:block; margin-top:.75rem; letter-spacing:.08em; text-transform:none;
+  font-size:.78rem; color:var(--cream-dim); }
+
+/* ---------- NAV ----------
+   Sentinel carries NO negative margin — only the nav pulls up.
+   Having it on both was the bug that left a strip of section bg below the photo. */
+#nav-sentinel{ height:1px; }
+
+.site-nav{
+  position:sticky; top:0; z-index:50;
+  margin-top:calc(var(--nav-h) * -1);
+  height:var(--nav-h);
+  display:flex; align-items:center; justify-content:center;
+  gap:1rem; padding:0 clamp(1rem,4vw,2.25rem);
+  border-bottom:1px solid transparent;
+  transition:background 500ms var(--ease-holler),
+             backdrop-filter 500ms var(--ease-holler),
+             border-color 500ms var(--ease-holler);
+}
+.nav-mark{ display:block; flex:none; line-height:0; }
+.nav-logo{ width:42px; height:auto; display:block;
+  transition:filter 500ms var(--ease-holler); }
+.nav-links{ display:flex; align-items:center; gap:clamp(.9rem,3vw,2.25rem); }
+.site-nav a{ text-decoration:none; }
+.nav-links a{
+  font-size:.94rem; font-weight:700; letter-spacing:.05em;
+  position:relative; padding:.4rem 0;
+  transition:color 350ms var(--ease-holler);
+}
+.nav-links a::after{ content:""; position:absolute; left:0; bottom:0; height:2px; width:100%;
+  background:currentColor; scale:0 1; transform-origin:left;
+  transition:scale 450ms var(--ease-holler); }
+.nav-links a:hover::after{ scale:1 1; }
+
+/* LIGHT — black type needs a light surface under it */
+body[data-nav="light"] .site-nav{
+  background:linear-gradient(to top, rgba(232,220,200,.6), rgba(232,220,200,0)); }
+body[data-nav="light"] .nav-links a{ color:#0d0a07; text-shadow:0 1px 12px rgba(232,220,200,.7); }
+body[data-nav="light"] .nav-logo{ filter:brightness(0); }
+body[data-nav="light"] .site-nav.is-docked{
+  background:rgba(232,220,200,.96); backdrop-filter:blur(14px) saturate(1.2);
+  border-bottom-color:rgba(13,10,7,.18); }
+body[data-nav="light"] .site-nav.is-docked .nav-links a{ text-shadow:none; }
+
+/* DARK — the original treatment */
+body[data-nav="dark"] .site-nav{ background:transparent; }
+body[data-nav="dark"] .nav-links a{ color:var(--cream); text-shadow:0 1px 12px rgba(0,0,0,.85); }
+body[data-nav="dark"] .nav-logo{
+  filter:var(--tint-cream) drop-shadow(0 1px 10px rgba(0,0,0,.6)); }
+body[data-nav="dark"] .site-nav.is-docked{
+  background:rgba(13,10,7,.86); backdrop-filter:blur(14px) saturate(1.2);
+  border-bottom-color:var(--rule); }
+body[data-nav="dark"] .site-nav.is-docked .nav-links a{ text-shadow:none; }
+
+/* ---------- CONTENT ---------- */
+main{ position:relative; z-index:10; }
+
+/*  SECTION SHELL — opaque bg + z-index so content slides over the hero.
+   ------------------------------------------------------------------ */
+.section{ position:relative; background:var(--ink); padding:clamp(5rem,13vw,9rem) 1.5rem;
+  border-top:1px solid var(--rule); overflow:hidden; }
+.section:nth-of-type(even){ background:var(--ink-lift); }
+.section-inner{ max-width:64rem; margin:0 auto; position:relative; z-index:2; }
+.eyebrow{ font-size:.65rem; letter-spacing:.32em; text-transform:uppercase;
+  color:var(--amber); margin:0 0 1.25rem; }
+.section h2{ font-size:clamp(1.9rem,5.4vw,3.2rem); margin:0 0 1.5rem;
+  text-wrap:balance; }
+.section h1{ font-family:var(--display); font-weight:700;
+  font-size:clamp(1.9rem,5.4vw,3.2rem); line-height:1.08; margin:0 0 1.5rem;
+  text-wrap:balance; }
+.h1-name{ display:block; font-family:var(--body); font-weight:600; font-size:.65rem;
+  letter-spacing:.32em; text-transform:uppercase; color:var(--amber);
+  margin-bottom:1.25rem; }
+.section h3{ font-family:var(--display); font-weight:700; font-size:clamp(1.4rem,3.5vw,2rem);
+  margin:0 0 .6rem; color:var(--cream); }
+.section p{ max-width:44ch; color:var(--cream-dim); font-size:1.02rem; margin:0 0 1rem; }
+.section p.lead{ color:var(--cream); font-family:var(--display); font-style:italic;
+  font-size:clamp(1.25rem,3vw,1.6rem); line-height:1.4; max-width:26ch; margin:0 0 2rem; }
+.section p strong{ color:var(--cream); font-weight:400; }
+
+.embed{ margin:2rem 0 0; max-width:44rem; }
+.embed iframe{ display:block; width:100%; border:0; }
+
+.upcoming{ margin-top:0; padding-top:2.25rem; border-top:1px solid var(--rule); }
+.upcoming .tag{ display:inline-block; font-size:.62rem; letter-spacing:.28em;
+  text-transform:uppercase; color:var(--amber); border:1px solid var(--amber);
+  padding:.35rem .7rem; margin-bottom:1rem; }
+
+/* ---- shows ---- */
+
+/*  SHOWS — uncapped so the list fills the 64rem (1024px) content column.
+   ------------------------------------------------------------------ */
+.shows{ list-style:none; padding:0; margin:2rem 0 0; }
+.show{ display:grid; grid-template-columns:4.5rem 1fr auto; gap:1.5rem; align-items:center;
+  padding:1.5rem 0; border-top:1px solid var(--rule); }
+.show:last-child{ border-bottom:1px solid var(--rule); }
+.show-date{ text-align:center; line-height:1; }
+.show-date .mon{ display:block; font-size:.68rem; letter-spacing:.2em;
+  text-transform:uppercase; color:var(--amber); margin-bottom:.3rem; }
+.show-date .day{ display:block; font-family:var(--display); font-weight:700;
+  font-size:2rem; color:var(--cream); }
+.show-body h3{ margin:0 0 .3rem; font-size:1.25rem; }
+.show-body p{ margin:0; font-size:.9rem; }
+.show-actions{ display:flex; align-items:center; gap:1rem; }
+
+
+/* === RSVP HEARTS — localStorage in the lab; Worker + KV in production.
+   ------------------------------------------------------------------ */
+.rsvp{ display:inline-flex; align-items:center; gap:.5rem; background:none;
+  border:1px solid var(--rule); border-radius:2rem; padding:.5rem .9rem;
+  color:var(--cream-dim); font:inherit; font-size:.85rem; cursor:pointer;
+  transition:border-color 300ms var(--ease-holler), color 300ms var(--ease-holler); }
+.rsvp:hover{ border-color:var(--amber); color:var(--cream); }
+.rsvp svg{ width:1.05rem; height:1.05rem; fill:none; stroke:currentColor; stroke-width:1.8;
+  transition:transform 420ms var(--ease-punch); }
+.rsvp[aria-pressed="true"]{ border-color:var(--amber); color:var(--amber-hot); }
+.rsvp[aria-pressed="true"] svg{ fill:currentColor; stroke:currentColor; transform:scale(1.18); }
+.rsvp-count{ font-variant-numeric:tabular-nums; }
+.rsvp-count[data-low="true"]{ display:none; }
+
+.tickets{ font-size:.82rem; letter-spacing:.16em; text-transform:uppercase;
+  color:var(--cream); text-decoration:none; border-bottom:1px solid var(--amber);
+  padding-bottom:.2rem; white-space:nowrap; }
+.tickets[aria-disabled="true"]{ color:var(--cream-dim); border-color:var(--rule);
+  pointer-events:none; }
+
+/* ---- two-column section split ---- */
+.split{ display:grid; grid-template-columns:1fr 1fr; gap:clamp(2rem,6vw,5rem);
+  align-items:center; }
+.split-top{ align-items:start; }
+@media (max-width:52rem){ .split{ grid-template-columns:1fr; } }
+
+.figure{ margin:0; position:relative; }
+.figure img{ width:100%; height:100%; object-fit:cover; display:block; }
+.figure-portrait{ aspect-ratio:4/5; }
+.figure-land{ aspect-ratio:16/9; }
+.figure-band{ aspect-ratio:3/2; }
+
+/* video */
+.video-wrap{ aspect-ratio:16/9; background:var(--ink-lift); overflow:hidden; position:relative; }
+/* CLICK-TO-PLAY FACADE — poster ships in HTML; iframe injected on click only.
+   Keeps the player out of initial load (INP/LCP) and off the crawl path. */
+.video-facade{ position:absolute; inset:0; width:100%; height:100%; padding:0;
+  border:0; background:var(--ink-lift); cursor:pointer; display:block; }
+.video-facade img{ width:100%; height:100%; object-fit:cover; display:block;
+  transition:transform .7s var(--ease-holler), filter .45s ease; }
+.video-facade:hover img,
+.video-facade:focus-visible img{ transform:scale(1.035); filter:brightness(1.06); }
+.video-facade:focus-visible{ outline:2px solid var(--amber); outline-offset:3px; }
+.video-play{ position:absolute; inset:0; display:grid; place-items:center; }
+.video-play svg{ width:clamp(3.6rem,7vw,4.75rem); height:auto;
+  filter:drop-shadow(0 2px 14px rgba(0,0,0,.5)); }
+.video-play .yt-bg{ fill:var(--ink); opacity:.66; transition:fill .3s ease, opacity .3s ease; }
+.video-play .yt-tri{ fill:var(--cream); }
+.video-facade:hover .yt-bg,
+.video-facade:focus-visible .yt-bg{ fill:var(--amber); opacity:.94; }
+@media (prefers-reduced-motion:reduce){
+  .video-facade img{ transition:none; }
+  .video-facade:hover img,.video-facade:focus-visible img{ transform:none; }
+}
+.video-wrap iframe{ width:100%; height:100%; border:0; display:block; }
+
+/* About: copy in one left column, video stacked over the band shot right */
+
+/* ===================== ABOUT — copy left, video over band photo right.
+   ------------------------------------------------------------------ */
+.about-grid{ display:grid; grid-template-columns:1fr 1fr;
+  gap:clamp(2rem,6vw,4.5rem); align-items:start; }
+.about-media{ display:grid; gap:clamp(1rem,3vw,1.75rem); }
+
+/* Press gallery drops to align with the h2, not the eyebrow above it */
+
+/* === PRESS — right column drops to align with the h2, not the eyebrow.
+   ------------------------------------------------------------------ */
+.press-media{ padding-top:calc((.65rem * 1.6) + 1.25rem); }
+
+@media (max-width:52rem){
+  .about-grid{ grid-template-columns:1fr; }
+  .press-media{ padding-top:0; }
+}
+.figure figcaption{ font-size:.7rem; letter-spacing:.18em; text-transform:uppercase;
+  color:var(--cream-dim); margin-top:.75rem; }
+
+/* obvious placeholder treatment — remove .is-slot when real art lands */
+.is-slot{ background:var(--ink-lift); border:1px dashed var(--rule);
+  display:grid; place-items:center; }
+.is-slot span{ font-size:.68rem; letter-spacing:.2em; text-transform:uppercase;
+  color:var(--cream-dim); text-align:center; padding:1rem; }
+
+.thumb-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:.75rem;
+  margin-top:.75rem; list-style:none; padding:0; }
+.thumb-grid li{ aspect-ratio:1; overflow:hidden; background:var(--ink-lift); }
+.thumb-grid img{ width:100%; height:100%; object-fit:cover; display:block;
+  transition:transform 700ms var(--ease-holler), opacity 300ms var(--ease-holler); }
+.thumb-grid li:hover img{ transform:scale(1.06); opacity:.85; }
+
+/* ---- footer ---- */
+.site-footer{ position:relative; z-index:10; background:var(--ink-lift);
+  border-top:1px solid var(--rule); padding:clamp(3.5rem,9vw,6rem) 6vw 2.5rem; }
+
+/* ============== FOOTER — contact form left (1.2fr), brand right (1fr).
+   ------------------------------------------------------------------ */
+.footer-inner{ max-width:64rem; margin:0 auto; }
+.footer-grid{ display:grid; grid-template-columns:1.2fr 1fr; gap:clamp(2.5rem,6vw,5rem); }
+@media (max-width:52rem){ .footer-grid{ grid-template-columns:1fr; } }
+.footer-logo{ width:clamp(8rem,15vw,11rem); height:auto; display:block;
+  filter:var(--tint-cream); opacity:.85; margin-bottom:1.75rem; }
+.footer-contact{ list-style:none; padding:0; margin:0 0 1.75rem; }
+.footer-contact li{ margin-bottom:.6rem; font-size:.9rem; color:var(--cream-dim); }
+.footer-contact a{ color:var(--cream); text-decoration:none;
+  border-bottom:1px solid var(--rule); }
+.footer-contact a:hover{ border-color:var(--amber); }
+
+/* ---- form ---- */
+.form-row{ margin-bottom:1.15rem; }
+
+/*  FORM FIELDS — no endpoint yet. Pages Function -> GoHighLevel at port.
+   ------------------------------------------------------------------ */
+.form-row label{ display:block; font-size:.68rem; letter-spacing:.2em;
+  text-transform:uppercase; color:var(--cream-dim); margin-bottom:.5rem; }
+.form-row input[type=text],.form-row input[type=email],.form-row textarea{
+  width:100%; background:var(--ink); border:1px solid var(--rule); color:var(--cream);
+  font:inherit; font-size:.95rem; padding:.65rem .9rem;
+  transition:border-color 300ms var(--ease-holler); }
+.form-row input:focus,.form-row textarea:focus{ outline:none; border-color:var(--amber); }
+.form-row textarea{ min-height:7rem; resize:vertical; }
+.checks{ display:flex; flex-wrap:wrap; gap:.75rem; margin-bottom:1.4rem; }
+.check{ display:inline-flex; align-items:center; gap:.55rem; cursor:pointer;
+  border:1px solid var(--rule); padding:.6rem 1rem; font-size:.82rem;
+  color:var(--cream-dim); user-select:none;
+  transition:border-color 260ms var(--ease-holler), color 260ms var(--ease-holler); }
+.check input{ position:absolute; opacity:0; width:0; height:0; }
+.check .box{ width:1rem; height:1rem; border:1px solid var(--cream-dim);
+  display:grid; place-items:center; flex:none;
+  transition:background-color 260ms var(--ease-holler), border-color 260ms var(--ease-holler); }
+.check .box::after{ content:""; width:.5rem; height:.28rem; border-left:2px solid var(--ink);
+  border-bottom:2px solid var(--ink); transform:rotate(-45deg) scale(0);
+  transition:transform 300ms var(--ease-punch); }
+.check:has(input:checked){ border-color:var(--amber); color:var(--cream); }
+.check:has(input:checked) .box{ background:var(--amber); border-color:var(--amber); }
+.check:has(input:checked) .box::after{ transform:rotate(-45deg) scale(1); }
+.check:has(input:focus-visible){ outline:2px solid var(--amber); outline-offset:2px; }
+.form-note{ font-size:.78rem; color:var(--cream-dim); margin:.9rem 0 0; max-width:none; }
+.form-status{ font-size:.85rem; margin:1rem 0 0; min-height:1.2em; color:var(--amber-hot); }
+
+.footer-bar{ display:flex; flex-wrap:wrap; gap:1rem 2rem; justify-content:space-between;
+  align-items:center; margin-top:clamp(3rem,7vw,4.5rem); padding-top:1.75rem;
+  border-top:1px solid var(--rule); font-size:.78rem; color:var(--cream-dim); }
+
+@media (max-width:34rem){
+  .show{ grid-template-columns:3.5rem 1fr; gap:1rem; }
+  .show-actions{ grid-column:1 / -1; }
+}
+
+/* ---- music ---- */
+.music-grid{ display:grid; grid-template-columns:1.4fr 1fr;
+  gap:clamp(2rem,6vw,4.5rem); align-items:start; }
+
+/*  MUSIC MEDIA — prints + copy wrapped as ONE grid child. Unwrapped, the
+   copy became a 3rd child and auto-placed under Longest Road.
+   ------------------------------------------------------------------ */
+.music-media{ padding-top:clamp(3rem,7vw,5.5rem); }
+.music-bts{ display:grid; grid-template-columns:repeat(11,1fr); grid-template-rows:repeat(11,1fr);
+  aspect-ratio:1/1; max-width:62%; }
+.music-bts figure{ margin:0; overflow:hidden; background:var(--ink-lift);
+  border:.25rem solid var(--cream); box-shadow:0 12px 30px rgba(0,0,0,.6); }
+.music-bts figure:nth-child(1){ grid-area:1 / 1 /  6 /  6; transform:rotate(-6deg);  z-index:2; }
+.music-bts figure:nth-child(2){ grid-area:2 / 5 /  7 / 10; transform:rotate(4deg);   z-index:4; }
+.music-bts figure:nth-child(3){ grid-area:6 / 2 / 11 /  7; transform:rotate(3deg);   z-index:1; }
+.music-bts figure:nth-child(4){ grid-area:7 / 6 / 12 / 11; transform:rotate(-4.5deg);z-index:3; }
+.music-bts img{ width:100%; height:100%; object-fit:cover; display:block; }
+@media (max-width:52rem){
+  .music-grid{ grid-template-columns:1fr; }
+  .music-media{ padding-top:0; }
+  .music-bts{ max-width:24rem; margin:1.5rem auto 0; }
+}
+
+.section p.bts-copy{ margin:clamp(2rem,4vw,2.75rem) 0 0; }
+
+/* ---- gallery ---- */
+
+/* ================ GALLERY — JS-injected placeholder crops (gate fail).
+   ------------------------------------------------------------------ */
+.gallery{ list-style:none; padding:0; margin:2rem 0 0; display:grid;
+  grid-template-columns:repeat(4,1fr); gap:.85rem; }
+.gallery li{ aspect-ratio:1; overflow:hidden; background:var(--ink-lift); }
+.gallery li:first-child{ grid-column:span 2; grid-row:span 2; aspect-ratio:1; }
+.gallery img{ width:100%; height:100%; object-fit:cover; display:block;
+  transition:transform 800ms var(--ease-holler), opacity 350ms var(--ease-holler); }
+.gallery li:hover img{ transform:scale(1.05); opacity:.88; }
+@media (max-width:44rem){
+  .gallery{ grid-template-columns:repeat(2,1fr); }
+  .gallery li:first-child{ grid-column:span 2; grid-row:auto; aspect-ratio:16/10; }
+}
+
+/* ---- buttons ---- */
+.btn{ display:inline-flex; align-items:center; gap:.6rem; text-decoration:none;
+  font-size:.78rem; letter-spacing:.2em; text-transform:uppercase; font-weight:600;
+  padding:.95rem 1.6rem; border:1px solid var(--amber); color:var(--amber-hot);
+  background:none; cursor:pointer; font-family:var(--body);
+  transition:background-color 320ms var(--ease-holler), color 320ms var(--ease-holler); }
+.btn:hover{ background:var(--amber); color:var(--ink); }
+.btn-solid{ background:var(--amber); color:var(--ink); border-color:var(--amber); }
+.btn-solid:hover{ background:var(--amber-hot); border-color:var(--amber-hot); color:var(--ink); }
+
+/* ---- press ---- */
+.pull{ font-family:var(--display); font-style:italic; color:var(--cream);
+  font-size:clamp(1.35rem,3.6vw,2.1rem); line-height:1.35; max-width:24ch;
+  margin:0 0 .9rem; }
+.press-list{ list-style:none; padding:0; margin:2rem 0 0; display:grid; gap:2.75rem; }
+.press-list cite{ display:block; font-style:normal; font-size:.7rem; letter-spacing:.22em;
+  text-transform:uppercase; color:var(--amber); }
+.press-meta{ display:flex; flex-wrap:wrap; gap:1rem 2rem; margin:2.75rem 0 2rem;
+  padding-top:2rem; border-top:1px solid var(--rule); font-size:.85rem;
+  color:var(--cream-dim); }
+
+/* ---- merch ---- */
+
+/*  MERCH — cards are JS-injected (gate fail). Tiles use multiply blend:
+   white mockup bg picks up --merch-tile. NOTE: this also tints any
+   genuinely white/cream product. Exempt those cards when identified.
+   ------------------------------------------------------------------ */
+.merch-grid{ list-style:none; padding:0; margin:2rem 0 0;
+  display:grid; grid-template-columns:repeat(auto-fill,minmax(12.5rem,1fr)); gap:1.75rem; }
+.merch-item a{ text-decoration:none; color:inherit; display:block; }
+.merch-thumb{ aspect-ratio:1; background:var(--merch-tile); overflow:hidden;
+  margin-bottom:.9rem; isolation:isolate; }
+.merch-thumb img{ width:100%; height:100%; object-fit:cover; display:block;
+  mix-blend-mode:multiply;
+  transition:transform 700ms var(--ease-holler); }
+.merch-item a:hover .merch-thumb img{ transform:scale(1.05); }
+.merch-name{ font-size:.92rem; color:var(--cream); margin:0 0 .2rem; max-width:none; }
+.merch-price{ font-size:.85rem; color:var(--amber); margin:0; max-width:none; }
+
+/* ---- newsletter ---- */
+/* ---- finale: photo-backed signup (Colter Wall reference) ---- */
+.section.finale{ background:var(--ink); padding-block:clamp(6rem,16vw,11rem); }
+.finale-bg{ position:absolute; inset:0; z-index:0; }
+.finale-bg img{ width:100%; height:100%; object-fit:cover; object-position:78% 42%; }
+.finale-bg::after{ content:""; position:absolute; inset:0;
+  background:linear-gradient(90deg, rgba(13,10,7,.95) 0%, rgba(13,10,7,.86) 30%,
+             rgba(13,10,7,.45) 62%, rgba(13,10,7,.12) 100%); }
+.finale-inner{ max-width:64rem; }
+.finale h2{ font-size:clamp(2.3rem,7.2vw,4.6rem); text-transform:uppercase;
+  color:var(--amber); line-height:.94; letter-spacing:-.005em; margin:0 0 2rem;
+  max-width:14ch; }
+.finale-form{ display:grid; grid-template-columns:1fr auto; align-items:end;
+  gap:1.25rem; max-width:32rem; border-bottom:1px solid rgba(232,220,200,.4);
+  transition:border-color 350ms var(--ease-holler); }
+.finale-form:focus-within{ border-bottom-color:var(--amber); }
+.finale-form input{ background:none; border:0; color:var(--cream); font:inherit;
+  font-size:1rem; padding:.55rem 0; }
+.finale-form input:focus{ outline:none; }
+.finale-form input::placeholder{ color:var(--cream-dim); text-transform:uppercase;
+  letter-spacing:.16em; font-size:.78rem; }
+.finale-form button{ background:none; border:0; color:var(--cream); cursor:pointer;
+  font:inherit; font-size:.78rem; letter-spacing:.2em; text-transform:uppercase;
+  padding:.55rem 0; transition:color 300ms var(--ease-holler); }
+.finale-form button:hover{ color:var(--amber-hot); }
+.section p.finale-note{ margin:1.4rem 0 0; font-size:.82rem;
+  color:var(--cream-dim); max-width:32rem; }
+@media (max-width:52rem){
+  .finale-bg::after{ background:linear-gradient(180deg, rgba(13,10,7,.9) 0%,
+    rgba(13,10,7,.82) 55%, rgba(13,10,7,.6) 100%); }
+}
+
+/* ---- socials ---- */
+.socials{ list-style:none; padding:0; margin:2rem 0 0;
+  display:flex; flex-wrap:wrap; gap:.75rem; }
+.socials a{ display:inline-flex; align-items:center; gap:.5rem; text-decoration:none;
+  border:1px solid var(--rule); padding:.65rem 1.05rem; color:var(--cream-dim);
+  font-size:.8rem; letter-spacing:.06em;
+  transition:border-color 300ms var(--ease-holler), color 300ms var(--ease-holler); }
+.socials a:hover{ border-color:var(--amber); color:var(--cream); }
+.socials svg{ width:1.05rem; height:1.05rem; fill:currentColor; flex:none; }
+
+/* ---- interstitial ---- */
+#gate{ border:none; padding:0; background:none; max-width:30rem; width:calc(100% - 2rem); }
+#gate::backdrop{ background:rgba(13,10,7,.82); backdrop-filter:blur(6px); }
+.gate-card{ position:relative; background:var(--ink-lift); border:1px solid var(--rule);
+  padding:2.6rem 2rem 2.2rem; }
+.gate-card h2{ font-family:var(--display); font-size:1.75rem; margin:0 0 .75rem;
+  color:var(--cream); line-height:1.2; }
+.gate-card p{ color:var(--cream-dim); font-size:.95rem; margin:0 0 1.4rem; max-width:none; }
+.gate-close{ position:absolute; top:.6rem; right:.8rem; background:none; border:none;
+  color:var(--cream-dim); font-size:1.6rem; line-height:1; cursor:pointer; padding:.3rem .5rem; }
+.gate-close:hover{ color:var(--cream); }
+#gate[open]{ animation:gate-in 520ms var(--ease-holler) both; }
+@keyframes gate-in{ from{opacity:0; transform:translateY(14px);} }
+@media (prefers-reduced-motion:reduce){ #gate[open]{ animation:none; } }
+
+/*  REVEAL — IntersectionObserver adds .is-visible on section AND footer.
+   ------------------------------------------------------------------ */
+.reveal{ opacity:0; transform:translateY(26px); }
+.sr-only{ position:absolute; width:1px; height:1px; padding:0; margin:-1px;
+  overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0; }
+.is-visible .reveal{ opacity:1; transform:none;
+  transition:opacity 1000ms var(--ease-holler), transform 1000ms var(--ease-holler); }
+.is-visible .reveal:nth-child(1){ transition-delay:0ms; }
+.is-visible .reveal:nth-child(2){ transition-delay:var(--stagger); }
+.is-visible .reveal:nth-child(3){ transition-delay:calc(var(--stagger)*2); }
+.is-visible .reveal:nth-child(4){ transition-delay:calc(var(--stagger)*3); }
+.link-out{ display:inline-block; margin-top:1rem; text-decoration:none; font-size:.72rem;
+  letter-spacing:.22em; text-transform:uppercase; color:var(--amber);
+  border-bottom:1px solid currentColor; padding-bottom:.3rem;
+  transition:color 350ms var(--ease-holler); }
+.link-out:hover{ color:var(--amber-hot); }
+.end{ position:relative; z-index:10; background:var(--ink); border-top:1px solid var(--rule);
+  padding:4.5rem 1.5rem; text-align:center; font-size:.68rem; letter-spacing:.22em;
+  text-transform:uppercase; color:var(--cream-dim); }
+
+/* ---------- LAB ---------- */
+/* GRADE LAB HIDDEN — set to 'block' to bring the sliders back.
+   Delete #lab and .lab entirely at the Astro port. */
+#lab{ display:none; }
+.lab{ position:fixed; right:0; bottom:0; z-index:200; width:min(20rem,92vw);
+  background:rgba(13,10,7,.94); backdrop-filter:blur(18px);
+  border-top:1px solid var(--rule); border-left:1px solid var(--rule);
+  font-size:.72rem; transform:translateY(calc(100% - 2.6rem));
+  transition:transform 500ms var(--ease-holler); }
+.lab.open{ transform:translateY(0); }
+.lab-tab{ all:unset; display:block; width:100%; box-sizing:border-box; height:2.6rem;
+  line-height:2.6rem; padding:0 1rem; cursor:pointer; font-size:.64rem;
+  letter-spacing:.24em; text-transform:uppercase; color:var(--amber); }
+.lab-body{ padding:0 1rem 1.15rem; }
+.row{ display:grid; grid-template-columns:5.4rem 1fr 2.6rem; align-items:center;
+  gap:.6rem; margin-bottom:.55rem; }
+.row label{ color:var(--cream-dim); font-size:.68rem; }
+.row output{ color:var(--cream); font-variant-numeric:tabular-nums; text-align:right; font-size:.68rem; }
+input[type=range]{ width:100%; accent-color:var(--amber); }
+.scheme{ display:flex; gap:.4rem; margin:.3rem 0 .85rem; }
+.scheme button{ all:unset; flex:1; text-align:center; cursor:pointer; padding:.45rem 0;
+  border:1px solid var(--rule); font-size:.62rem; letter-spacing:.18em;
+  text-transform:uppercase; color:var(--cream-dim);
+  transition:background-color 300ms var(--ease-holler), color 300ms var(--ease-holler); }
+.scheme button[aria-pressed="true"]{ background:var(--amber); color:var(--ink); border-color:var(--amber); }
+.lab-out{ margin-top:.5rem; padding:.7rem; background:#0a0806; border:1px solid var(--rule);
+  font-family:ui-monospace,monospace; font-size:.65rem; color:var(--cream-dim);
+  white-space:pre; overflow-x:auto; line-height:1.7; }
+.lab-btn{ all:unset; display:inline-block; margin-top:.65rem; cursor:pointer; font-size:.62rem;
+  letter-spacing:.2em; text-transform:uppercase; color:var(--amber);
+  border-bottom:1px solid currentColor; padding-bottom:.2rem; }
+.lab-btn:hover{ color:var(--amber-hot); }
+
+@media (prefers-reduced-motion: reduce){
+  html{ scroll-behavior:auto; }
+  *,*::before,*::after{ animation-duration:.01ms !important;
+    animation-iteration-count:1 !important; transition-duration:.01ms !important; }
+  .reveal{ opacity:1; transform:none; }}
+</style>
+</head>
+<body data-nav="dark">
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-5D6G8HNT"
+  height="0" width="0" style="display:none;visibility:hidden" title="Google Tag Manager"></iframe></noscript>
+<noscript><img height="1" width="1" style="display:none" alt=""
+  src="https://www.facebook.com/tr?id=631018780015519&ev=PageView&noscript=1"></noscript>
+
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="hero">
+  <div class="hero-fallback"></div>
+  <img class="hero-photo" id="photo" alt="Big Holler performing live"
+       src="https://raw.githubusercontent.com/paynestreet/bigholler/8312ab2dba067e1f469bff9f4051c0576bcf4ba8/public/img/IMG_2968.JPG"
+       fetchpriority="high">
+  <div class="hero-grade"></div>
+  <svg class="hero-grain" aria-hidden="true">
+    <filter id="grain"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3"/></filter>
+    <rect width="100%" height="100%" filter="url(#grain)"/>
+  </svg>
+  <div class="hero-vignette"></div>
+
+  <div class="drop" id="drop" role="button" tabindex="0" aria-label="Add hero photo">
+    <div>
+      <p>Drop your photo here</p>
+      <small>or click to browse</small>
+    </div>
+  </div>
+  <input type="file" id="file" accept="image/*" hidden>
+</header>
+
+<!-- = NAV SENTINEL — fires the docked nav at absolute top (rootMargin 0).
+     -------------------------------------------------------------- -->
+<div id="nav-sentinel" aria-hidden="true"></div>
+
+<!-- ===== PRIMARY NAV — logo tinted via --tint-cream filter (cross-origin
+     CSS masks are blocked, so a filter chain is the only option).
+     -------------------------------------------------------------- -->
+<nav class="site-nav" aria-label="Primary">
+  <div class="nav-links">
+    <a class="nav-mark" href="#" aria-label="Big Holler — home">
+      <img class="nav-logo" src="https://github.com/paynestreet/bigholler/blob/main/bh.png?raw=true" alt="Big Holler">
+    </a>
+    <a href="#about">About</a>
+    <a href="#music">Music</a>
+    <a href="#shows">Shows</a>
+    <a href="#press">Press</a>
+    <a href="#gallery">Gallery</a>
+    <a href="#merch">Merch</a>
+  </div>
+</nav>
+
+<!-- ======================================================== MAIN CONTENT
+     -------------------------------------------------------------- -->
+<main id="main">
+  <!--  01 ABOUT — carries the page's ONLY <h1> (name + genre + city = entity anchor).
+       -------------------------------------------------------------- -->
+  <section class="section" id="about">
+    <div class="section-inner about-grid">
+      <div>
+        <h1 class="reveal"><span class="h1-name">Big Holler</span>Alt Country from Richmond, VA.</h1>
+        <p class="lead reveal">Suburban cowboy dads looking for a patch of grass.</p>
+        <p class="reveal">The songs come out of the gap between the life we're actually living and the one we pictured. School pickup, a mortgage, a group text about weekend logistics &mdash; and underneath all of it, a memory of driving to JMU to see a girl, drinking more than we should have with people we loved, and letting the Blue Ridge take the hangover off on the way home.</p>
+        <p class="reveal">Our fathers walked into a country that handed them a deal. We're still working out what happened to it, and whether they knew what they had. Somewhere past all that is our version of the good life. We can't picture it yet. We keep writing toward it anyway.</p>
+      </div>
+
+      <div class="about-media reveal">
+        <div class="video-wrap">
+          <button class="video-facade" type="button" data-yt="S3PwEbUp458"
+            data-title="Big Holler — official video"
+            aria-label="Play video: Big Holler, official video">
+            <img src="https://i.ytimg.com/vi/S3PwEbUp458/maxresdefault.jpg"
+              onerror="this.onerror=null;this.src='https://i.ytimg.com/vi/S3PwEbUp458/hqdefault.jpg'"
+              alt="Big Holler performing — video thumbnail"
+              width="1280" height="720" loading="lazy" decoding="async">
+            <span class="video-play" aria-hidden="true">
+              <svg viewBox="0 0 68 48" xmlns="http://www.w3.org/2000/svg">
+                <path class="yt-bg" d="M66.5 7.7c-.8-2.9-2.5-5.2-5.4-6C55.8.2 34 .2 34 .2S12.2.2 6.9 1.7C4 2.5 2.3 4.8 1.5 7.7.1 13 0 24 0 24s.1 11 1.5 16.3c.8 2.9 2.5 5.2 5.4 6C12.2 47.8 34 47.8 34 47.8s21.8 0 27.1-1.5c2.9-.8 4.6-3.1 5.4-6C67.9 35 68 24 68 24s-.1-11-1.5-16.3z"/>
+                <path class="yt-tri" d="M27 34.5 45 24 27 13.5z"/>
+              </svg>
+            </span>
+          </button>
+        </div>
+        <figure class="figure figure-band" id="about-figure">
+          <img src="https://raw.githubusercontent.com/paynestreet/bigholler/refs/heads/main/240814_BigHoller_072.jpg"
+               alt="The six members of Big Holler standing shoulder to shoulder against a scalloped concrete wall under warm sodium light"
+               loading="lazy" decoding="async" width="3000" height="2000">
+          <figcaption>Big Holler &middot; Richmond, Virginia</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ======= 02 MUSIC — Spotify embed left; scrapbook prints + copy right.
+       -------------------------------------------------------------- -->
+  <section class="section" id="music">
+    <div class="section-inner music-grid">
+      <div class="music-lead">
+      <p class="eyebrow reveal">Music</p>
+      <h2 class="reveal">The Valley</h2>
+      <div class="embed reveal">
+        <iframe style="border-radius:12px"
+          src="https://open.spotify.com/embed/album/3HoppxZyoRVzjIZjM1koLP?utm_source=generator&amp;si=f19d95a8aea3427a"
+          width="100%" height="352" frameborder="0" allowfullscreen
+          allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+          loading="lazy" title="The Valley by Big Holler on Spotify"></iframe>
+      </div>
+
+      </div>
+
+      <div class="music-media reveal">
+        <div class="music-bts">
+        <figure><img src="https://github.com/paynestreet/bigholler/blob/main/public/img/IMG_1674.jpeg?raw=true" alt="Big Holler recording session" loading="lazy" decoding="async"></figure>
+        <figure><img src="https://github.com/paynestreet/bigholler/blob/main/public/img/IMG_1708.jpeg?raw=true" alt="Big Holler recording session" loading="lazy" decoding="async"></figure>
+        <figure><img src="https://github.com/paynestreet/bigholler/blob/main/public/img/IMG_3376.jpeg?raw=true" alt="Big Holler recording session" loading="lazy" decoding="async"></figure>
+        <figure><img src="https://github.com/paynestreet/bigholler/blob/main/public/img/IMG_3386.jpeg?raw=true" alt="Big Holler recording session" loading="lazy" decoding="async"></figure>
+        </div>
+        <p class="bts-copy">The Valley is about getting older, the ups and downs life takes us through, and learning to build a life in the city when you&rsquo;d rather be in the Blue Ridge Mountains.</p>
+      </div>
+
+      <div class="upcoming reveal">
+        <span class="tag">Fall 2026</span>
+        <h3>Longest Road</h3>
+        <p>The next record. Same road, further out.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======== 03 SHOWS — full content width, no images. Placeholder dates.
+       -------------------------------------------------------------- -->
+  <section class="section" id="shows">
+    <div class="section-inner">
+      <p class="eyebrow reveal">Shows</p>
+      <h2 class="reveal">Where to find us</h2>
+
+      <ul class="shows reveal">
+        <li class="show">
+          <div class="show-date">
+            <span class="mon">Aug</span><span class="day">21</span>
+          </div>
+          <div class="show-body">
+            <h3>Private Party</h3>
+            <p>Richmond, VA &middot; Not open to the public</p>
+          </div>
+          <div class="show-actions">
+            <button class="rsvp" type="button" aria-pressed="false"
+                    data-show="2026-08-21-private-party">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5s-7.5-4.7-7.5-10A4.5 4.5 0 0 1 12 7.6a4.5 4.5 0 0 1 7.5 2.9c0 5.3-7.5 10-7.5 10z"/></svg>
+              <span class="rsvp-count" data-low="true">0</span>
+              <span class="sr-only">I'm going</span>
+            </button>
+            <a class="tickets" aria-disabled="true" href="#">Private</a>
+          </div>
+        </li>
+
+        <li class="show">
+          <div class="show-date">
+            <span class="mon">Sep</span><span class="day">12</span>
+          </div>
+          <div class="show-body">
+            <h3>Hardywood Park Craft Brewery &mdash; Downtown</h3>
+            <p>Richmond, VA &middot; 8:00 PM &middot; Free / all ages</p>
+          </div>
+          <div class="show-actions">
+            <button class="rsvp" type="button" aria-pressed="false"
+                    data-show="2026-09-12-hardywood-downtown">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5s-7.5-4.7-7.5-10A4.5 4.5 0 0 1 12 7.6a4.5 4.5 0 0 1 7.5 2.9c0 5.3-7.5 10-7.5 10z"/></svg>
+              <span class="rsvp-count" data-low="true">0</span>
+              <span class="sr-only">I'm going</span>
+            </button>
+            <a class="tickets" aria-disabled="true" href="#">Free</a>
+          </div>
+        </li>
+      </ul>
+
+      <p class="reveal" style="margin-top:1.75rem;font-size:.85rem;">Placeholder details &mdash; confirm times, address and ticket links before launch.</p>
+    </div>
+  </section>
+
+  <!-- = 04 PRESS — quotes are PLACEHOLDER. Never ship invented attribution.
+       -------------------------------------------------------------- -->
+  <section class="section" id="press">
+    <div class="section-inner split split-top">
+      <div>
+        <p class="eyebrow reveal">Press</p>
+        <h2 class="reveal">What they're saying</h2>
+
+        <ul class="press-list reveal">
+          <li>
+            <blockquote class="pull">Placeholder pull quote &mdash; replace with real press before launch.</blockquote>
+            <cite>Outlet name &middot; Month 2026</cite>
+          </li>
+          <li>
+            <blockquote class="pull">Second placeholder quote goes here.</blockquote>
+            <cite>Outlet name &middot; Month 2026</cite>
+          </li>
+        </ul>
+
+        <div class="press-meta reveal">
+          <span>Booking &mdash; <a href="mailto:booking@bighollerband.com" style="color:var(--cream)">booking@bighollerband.com</a></span>
+          <span>Press &mdash; <a href="mailto:press@bighollerband.com" style="color:var(--cream)">press@bighollerband.com</a></span>
+        </div>
+
+        <a class="btn btn-solid reveal" href="/press/">Press Kit</a>
+      </div>
+
+      <div class="press-media reveal">
+        <figure class="figure figure-land">
+          <img src="https://raw.githubusercontent.com/paynestreet/bigholler/refs/heads/main/240814_BigHoller_072.jpg"
+               alt="Big Holler press photo — the full six-piece lineup"
+               loading="lazy" decoding="async" style="object-position:center 40%">
+        </figure>
+        <ul class="thumb-grid" id="press-thumbs"></ul>
+        <figcaption style="font-size:.7rem;letter-spacing:.18em;text-transform:uppercase;color:var(--cream-dim);margin-top:.9rem">
+          Placeholder &mdash; same photo repeated, swap for real press shots
+        </figcaption>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================== 05 GALLERY — placeholder crops, JS-injected.
+       -------------------------------------------------------------- -->
+  <section class="section" id="gallery">
+    <div class="section-inner">
+      <p class="eyebrow reveal">Gallery</p>
+      <h2 class="reveal">More photos and video</h2>
+      <ul class="gallery reveal" id="gallery-grid"></ul>
+      <p class="reveal" style="margin-top:1.75rem;font-size:.85rem;">Placeholder crops &mdash; swap for real live and off-stage photos.</p>
+    </div>
+  </section>
+
+  <!-- ================ 06 MERCH — 8 Printify mockups, links out to Shopify.
+       -------------------------------------------------------------- -->
+  <section class="section" id="merch">
+    <div class="section-inner">
+      <p class="eyebrow reveal">Merch</p>
+      <h2 class="reveal">Wear it out</h2>
+      <p class="reveal">Mockups only &mdash; names, prices and links are placeholders pending confirmation.</p>
+
+      <ul class="merch-grid reveal" id="merch-grid"></ul>
+
+      <p class="reveal" style="margin-top:2.25rem;">
+        <a class="btn" href="https://shop.bighollerband.com" target="_blank" rel="noopener">Full shop</a>
+      </p>
+    </div>
+  </section>
+
+  <!-- ====== 07 FINALE SIGNUP — photo-backed panel (Colter Wall reference).
+       Native form, NOT the beehiiv iframe, so the hairline rule can be styled.
+       -------------------------------------------------------------- -->
+  <section class="section finale" id="newsletter-2">
+    <div class="finale-bg" aria-hidden="true">
+      <img src="https://raw.githubusercontent.com/paynestreet/bigholler/refs/heads/main/240814_BigHoller_072.jpg"
+           alt="" loading="lazy" decoding="async">
+    </div>
+    <div class="section-inner finale-inner">
+      <p class="eyebrow reveal">Mailing list</p>
+      <h2 class="reveal">Get on the list</h2>
+      <form class="finale-form reveal" id="finale-form" novalidate>
+        <input type="email" id="fin-email" name="email" required autocomplete="email"
+               placeholder="Email address" aria-label="Email address">
+        <button type="submit">Join</button>
+      </form>
+      <p class="finale-note reveal" id="finale-status" role="status" aria-live="polite">Dates, new songs, and the occasional word from the road. No noise.</p>
+    </div>
+  </section>
+</main>
+
+<!-- ==== INTERSTITIAL — fires at 1.5x scroll depth, never on load (Google
+     penalises mobile entry interstitials). Suppressed by localStorage.
+     -------------------------------------------------------------- -->
+<dialog id="gate" aria-labelledby="gate-title">
+  <div class="gate-card">
+    <button class="gate-close" type="button" data-gate-close aria-label="Close">&times;</button>
+    <h2 id="gate-title">Hear it first</h2>
+    <p>Show dates and new songs, straight from us. Nothing else.</p>
+    <iframe src="https://embeds.beehiiv.com/13ee3b2d-a909-45ac-bb2f-19db60f85f64?slim=true"
+      data-test-id="beehiiv-embed" height="44" frameborder="0" scrolling="no"
+      title="Email newsletter signup"
+      style="width:100%;margin:0;border:0;border-radius:0!important;background-color:transparent"></iframe>
+  </div>
+</dialog>
+
+<!-- ==================================================== FOOTER / CONTACT
+     -------------------------------------------------------------- -->
+<footer class="site-footer" id="contact">
+  <div class="footer-inner">
+    <div class="footer-grid">
+
+      <div class="reveal">
+        <p class="eyebrow">Get in touch</p>
+        <h2 style="font-size:clamp(1.7rem,4vw,2.4rem);margin:0 0 1.5rem">Say hello</h2>
+
+        <form id="contact-form" novalidate>
+          <div class="form-row">
+            <label for="cf-name">Name</label>
+            <input type="text" id="cf-name" name="name" required autocomplete="name">
+          </div>
+          <div class="form-row">
+            <label for="cf-email">Email</label>
+            <input type="email" id="cf-email" name="email" required autocomplete="email">
+          </div>
+
+          <fieldset style="border:0;padding:0;margin:0 0 .25rem">
+            <legend class="sr-only">Inquiry type</legend>
+            <div class="checks">
+              <label class="check">
+                <input type="checkbox" name="topic" value="booking">
+                <span class="box" aria-hidden="true"></span><span>Booking</span>
+              </label>
+              <label class="check">
+                <input type="checkbox" name="topic" value="press">
+                <span class="box" aria-hidden="true"></span><span>Press Inquiry</span>
+              </label>
+            </div>
+          </fieldset>
+
+          <div class="form-row">
+            <label for="cf-msg">Message</label>
+            <textarea id="cf-msg" name="message" required></textarea>
+          </div>
+
+          <button class="btn btn-solid" type="submit">Send</button>
+          <p class="form-status" id="cf-status" role="status" aria-live="polite"></p>
+          <p class="form-note">Leave both boxes unchecked for a general inquiry.</p>
+        </form>
+      </div>
+
+      <div>
+        <img class="footer-logo reveal" src="https://github.com/paynestreet/bigholler/blob/main/public/img/alt-country-rock-richmond-va.png?raw=true"
+             alt="Big Holler" loading="lazy" decoding="async">
+        <ul class="footer-contact reveal">
+          <li>Booking &mdash; <a href="mailto:booking@bighollerband.com">booking@bighollerband.com</a></li>
+          <li>Press &mdash; <a href="mailto:press@bighollerband.com">press@bighollerband.com</a></li>
+          <li>Richmond, Virginia</li>
+        </ul>
+        <ul class="socials reveal" id="socials"></ul>
+      </div>
+
+    </div>
+
+    <div class="footer-bar">
+      <span>&copy; 2026 Big Holler Music LLC</span>
+      <span>Richmond, Virginia</span>
+    </div>
+  </div>
+</footer>
+
+<aside class="lab" id="lab">
+  <button class="lab-tab" id="labTab" aria-expanded="false">Grade &mdash; tap to open</button>
+  <div class="lab-body">
+    <div class="scheme">
+      <button id="schemeLight" aria-pressed="false">Light nav</button>
+      <button id="schemeDark" aria-pressed="true">Dark nav</button>
+    </div>
+    <div class="row"><label for="warmth">Warmth</label><input type="range" id="warmth" min="0" max="1.3" step="0.01" value="0.80"><output id="oWarmth">0.80</output></div>
+    <div class="row"><label for="sat">Saturation</label><input type="range" id="sat" min="0" max="1.4" step="0.01" value="0.76"><output id="oSat">0.76</output></div>
+    <div class="row"><label for="bright">Brightness</label><input type="range" id="bright" min="0.3" max="1.3" step="0.01" value="0.65"><output id="oBright">0.65</output></div>
+    <div class="row"><label for="contrast">Contrast</label><input type="range" id="contrast" min="0.7" max="1.6" step="0.01" value="1.05"><output id="oContrast">1.05</output></div>
+    <div class="row"><label for="crop">Crop Y</label><input type="range" id="crop" min="0" max="100" step="1" value="91"><output id="oCrop">91%</output></div>
+    <div class="row"><label for="vig">Vignette</label><input type="range" id="vig" min="0" max="1" step="0.01" value="1"><output id="oVig">1</output></div>
+    <div class="lab-out" id="cssOut"></div>
+    <button class="lab-btn" id="copyBtn">Copy CSS</button>
+  </div>
+</aside>
+
+<script>
+const photo = document.getElementById('photo');
+const drop  = document.getElementById('drop');
+const file  = document.getElementById('file');
+
+function load(f){ if(!f || !f.type.startsWith('image/')) return; photo.src = URL.createObjectURL(f); }
+photo.addEventListener('load',  () => { photo.classList.add('loaded'); drop.classList.add('gone'); });
+photo.addEventListener('error', () => { photo.classList.remove('loaded'); drop.classList.remove('gone'); });
+drop.addEventListener('click', () => file.click());
+drop.addEventListener('keydown', e => { if(e.key==='Enter'||e.key===' '){ e.preventDefault(); file.click(); }});
+file.addEventListener('change', e => load(e.target.files[0]));
+['dragenter','dragover'].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.add('hot'); }));
+['dragleave','drop'].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.remove('hot'); }));
+drop.addEventListener('drop', e => load(e.dataTransfer.files[0]));
+document.addEventListener('dragover', e => e.preventDefault());
+document.addEventListener('drop', e => e.preventDefault());
+
+const root = document.documentElement;
+const map = [
+  ['warmth','--grade-warmth','oWarmth',v=>v],
+  ['sat','--grade-sat','oSat',v=>v],
+  ['bright','--grade-bright','oBright',v=>v],
+  ['contrast','--grade-contrast','oContrast',v=>v],
+  ['crop','--crop-y','oCrop',v=>v+'%'],
+  ['vig','--vignette','oVig',v=>v]
+];
+const cssOut = document.getElementById('cssOut');
+function sync(){
+  const lines = map.map(([id,prop,out,fmt])=>{
+    const v = document.getElementById(id).value;
+    root.style.setProperty(prop, fmt(v));
+    document.getElementById(out).textContent = fmt(v);
+    return prop+': '+fmt(v)+';';
+  });
+  cssOut.textContent = lines.join('\n');
+}
+map.forEach(([id])=> document.getElementById(id).addEventListener('input', sync));
+sync();
+
+const L = document.getElementById('schemeLight'), D = document.getElementById('schemeDark');
+function scheme(mode){
+  document.body.dataset.nav = mode;
+  L.setAttribute('aria-pressed', mode==='light');
+  D.setAttribute('aria-pressed', mode==='dark');
+}
+L.addEventListener('click', ()=>scheme('light'));
+D.addEventListener('click', ()=>scheme('dark'));
+
+const lab = document.getElementById('lab'), labTab = document.getElementById('labTab');
+labTab.addEventListener('click', ()=>{
+  const open = lab.classList.toggle('open');
+  labTab.setAttribute('aria-expanded', open);
+  labTab.textContent = open ? 'Grade — tap to close' : 'Grade — tap to open';
+});
+document.getElementById('copyBtn').addEventListener('click', e=>{
+  navigator.clipboard.writeText(cssOut.textContent);
+  e.target.textContent = 'Copied';
+  setTimeout(()=> e.target.textContent = 'Copy CSS', 1400);
+});
+
+// Dock — fires once the sentinel reaches the very top of the viewport,
+// i.e. the hero is fully scrolled past. Firing at -navH landed a full
+// nav-height early and read as the photo dimming.
+const nav = document.querySelector('.site-nav');
+new IntersectionObserver(([e]) => {
+  nav.classList.toggle('is-docked', !e.isIntersecting);
+}, { threshold:0, rootMargin:'0px 0px 0px 0px' })
+  .observe(document.getElementById('nav-sentinel'));
+
+/* ---- video facade: build the player only when asked ---- */
+document.querySelectorAll('.video-facade').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const f = document.createElement('iframe');
+    f.src = 'https://www.youtube-nocookie.com/embed/' + btn.dataset.yt + '?autoplay=1&rel=0';
+    f.title = btn.dataset.title;
+    f.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
+    f.allowFullscreen = true;
+    btn.replaceWith(f);
+    f.focus();
+  }, { once:true });
+});
+
+/* ---- merch (mockup data — confirm image↔product mapping) ---- */
+const MERCH = [
+  ['BH Zap! 5 Panel Cap','$28.99','68537530cacb97679a092893/102631/99922/198d2ba3f30'],
+  ['BH 5 Panel Cap','$39.99','68537530cacb97679a092893/102619/99930/198d2ba3f30'],
+  ['Heavy Cotton Pocket Tee','$26.99','689eb1c13d19146a0008a01a/12124/92570/198d383f3e8'],
+  ['The Valley Cotton Tee','$17.10','689eb1c13d19146a0008a01a/12124/92586/198d383f3e8'],
+  ['Softstyle T-Shirt','$25.00','689b84de18bb42907a0d446b/38191/97992/198a4b06b50'],
+  ['The Valley Canvas Tote','$24.99','6853839ecacb97679a092e53/119156/109584/197c7d806e8'],
+  ['Snapback Trucker Cap','$—','6859fa82ecf288a0b90b0860/118724/110130/snapback-trucker-cap-embroidery','front'],
+  ['Product name TBC','$—','68540a21d301e92a2d09bfb3/119415/109878/197884790e8']
+];
+/* == MERCH CARDS — JS-injected. MUST become static/collection-rendered.
+   ------------------------------------------------------------------ */
+document.getElementById('merch-grid').innerHTML = MERCH.map(([name,price,path,cam]) => `
+  <li class="merch-item">
+    <a href="https://shop.bighollerband.com" target="_blank" rel="noopener">
+      <div class="merch-thumb">
+        <img src="https://images.printify.com/mockup/${path}.jpg?s=608${cam?`&camera_label=${cam}`:``}"
+             alt="${name}" loading="lazy" decoding="async" width="608" height="608">
+      </div>
+      <p class="merch-name">${name}</p>
+      <p class="merch-price">${price}</p>
+    </a>
+  </li>`).join('');
+
+/* ---- socials (URLs are placeholders) ---- */
+const ICON = {
+  instagram:'M12 2.2c3.2 0 3.6 0 4.9.1 1.2.1 1.8.3 2.2.4.6.2 1 .5 1.4.9.4.4.7.8.9 1.4.2.4.4 1 .4 2.2.1 1.3.1 1.7.1 4.9s0 3.6-.1 4.9c-.1 1.2-.3 1.8-.4 2.2-.2.6-.5 1-.9 1.4-.4.4-.8.7-1.4.9-.4.2-1 .4-2.2.4-1.3.1-1.7.1-4.9.1s-3.6 0-4.9-.1c-1.2-.1-1.8-.3-2.2-.4-.6-.2-1-.5-1.4-.9-.4-.4-.7-.8-.9-1.4-.2-.4-.4-1-.4-2.2C2.2 15.6 2.2 15.2 2.2 12s0-3.6.1-4.9c.1-1.2.3-1.8.4-2.2.2-.6.5-1 .9-1.4.4-.4.8-.7 1.4-.9.4-.2 1-.4 2.2-.4C8.4 2.2 8.8 2.2 12 2.2zm0 3.2A6.6 6.6 0 1 0 18.6 12 6.6 6.6 0 0 0 12 5.4zm0 10.9A4.3 4.3 0 1 1 16.3 12 4.3 4.3 0 0 1 12 16.3zm6.9-11.1a1.5 1.5 0 1 1-1.5-1.5 1.5 1.5 0 0 1 1.5 1.5z',
+  tiktok:'M16.6 5.8a4.8 4.8 0 0 1-1.2-3.1h-3.2v12.9a2.6 2.6 0 1 1-1.9-2.5V9.7a5.8 5.8 0 1 0 5.1 5.8V9.1a7.9 7.9 0 0 0 4.6 1.5V7.4a4.7 4.7 0 0 1-3.4-1.6z',
+  youtube:'M21.6 7.2a2.5 2.5 0 0 0-1.8-1.8C18.2 5 12 5 12 5s-6.2 0-7.8.4a2.5 2.5 0 0 0-1.8 1.8A26 26 0 0 0 2 12a26 26 0 0 0 .4 4.8 2.5 2.5 0 0 0 1.8 1.8C5.8 19 12 19 12 19s6.2 0 7.8-.4a2.5 2.5 0 0 0 1.8-1.8A26 26 0 0 0 22 12a26 26 0 0 0-.4-4.8zM10 15V9l5.2 3z',
+  bandcamp:'M2.2 17.5 8.6 6.5H21.8l-6.4 11z',
+  spotify:'M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm4.6 14.4a.8.8 0 0 1-1.1.3 11.7 11.7 0 0 0-6-1.4 12.4 12.4 0 0 0-2.6.3.8.8 0 1 1-.3-1.5 14 14 0 0 1 3-.3 13.2 13.2 0 0 1 6.7 1.6.8.8 0 0 1 .3 1zm1.2-2.8a.9.9 0 0 1-1.3.3 14.4 14.4 0 0 0-7.2-1.7 15.9 15.9 0 0 0-3.3.4.9.9 0 1 1-.5-1.8 17.6 17.6 0 0 1 3.8-.4 16.1 16.1 0 0 1 8.1 1.9.9.9 0 0 1 .4 1.3zm1.3-3.1a1.1 1.1 0 0 1-1.5.4A17.4 17.4 0 0 0 9.9 9a19.6 19.6 0 0 0-4 .4 1.1 1.1 0 1 1-.5-2.1 21.7 21.7 0 0 1 4.5-.5 19.5 19.5 0 0 1 8.8 2.1 1.1 1.1 0 0 1 .4 1.5z',
+  apple:'M17 12.5a4 4 0 0 1 1.9-3.3 4.3 4.3 0 0 0-3.4-1.8c-1.4-.1-2.8.8-3.5.8s-1.9-.8-3.1-.8a4.6 4.6 0 0 0-3.9 2.4c-1.6 2.9-.4 7.1 1.2 9.4.8 1.1 1.7 2.4 3 2.4s1.6-.8 3.1-.8 1.9.8 3.1.8 2.1-1.1 2.9-2.3a10 10 0 0 0 1.3-2.7 4.1 4.1 0 0 1-2.6-4.1zM14.7 5.6A3.9 3.9 0 0 0 15.6 2a4 4 0 0 0-2.6 1.4 3.7 3.7 0 0 0-.9 3.5 3.3 3.3 0 0 0 2.6-1.3z',
+  tidal:'M8 4 4 8l4 4 4-4zM16 4l-4 4 4 4 4-4zM12 12l-4 4 4 4 4-4z'
+};
+const SOCIALS = [
+  ['Instagram','instagram','#'], ['TikTok','tiktok','#'], ['YouTube','youtube','#'],
+  ['Bandcamp','bandcamp','#'], ['Spotify','spotify','#'],
+  ['Apple Music','apple','#'], ['Tidal','tidal','#']
+];
+document.getElementById('socials').innerHTML = SOCIALS.map(([name,key,url]) => `
+  <li><a href="${url}" target="_blank" rel="noopener" aria-label="${name}">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="${ICON[key]}"/></svg>
+    <span>${name}</span>
+  </a></li>`).join('');
+
+/* ---- press thumbs (placeholder — one lineup shot cropped to each member) ---- */
+const PRESS_IMG = 'https://raw.githubusercontent.com/paynestreet/bigholler/refs/heads/main/240814_BigHoller_072.jpg';
+document.getElementById('press-thumbs').innerHTML =
+  ['12% 42%','28% 42%','45% 40%','58% 42%','72% 42%','88% 42%']
+  .map(pos => `<li><img src="${PRESS_IMG}" alt="" loading="lazy" decoding="async"
+       style="object-position:${pos}"></li>`).join('');
+
+/* ---- gallery (placeholder crops off the lineup shot) ---- */
+/* ============================ GALLERY — JS-injected placeholder crops.
+   ------------------------------------------------------------------ */
+document.getElementById('gallery-grid').innerHTML =
+  ['50% 40%','12% 42%','30% 45%','62% 40%','85% 42%','40% 75%','70% 20%']
+  .map(pos => `<li><img src="${PRESS_IMG}" alt="" loading="lazy" decoding="async"
+       style="object-position:${pos}"></li>`).join('');
+
+/* ---- finale signup — no endpoint yet; Pages Function -> beehiiv at port ---- */
+/* = FINALE SIGNUP — no endpoint. Pages Function -> beehiiv API at port.
+   ------------------------------------------------------------------ */
+document.getElementById('finale-form').addEventListener('submit', e => {
+  e.preventDefault();
+  const f = e.currentTarget, s = document.getElementById('finale-status');
+  if(!f.email.value.trim() || !f.email.checkValidity()){
+    s.textContent = 'Enter a valid email address.'; return; }
+  s.textContent = 'Not wired yet — needs the beehiiv endpoint.';
+});
+
+/* ---- contact form -----------------------------------------------------
+   PROTOTYPE: validates and fakes a send. Nothing is transmitted.
+   PRODUCTION: POST to a Cloudflare Pages Function that forwards to GHL —
+   per the SOP section library, LeadForm is GHL-wired.
+------------------------------------------------------------------------ */
+const cform  = document.getElementById('contact-form');
+const cstat  = document.getElementById('cf-status');
+if (cform) {
+  cform.addEventListener('submit', e => {
+    e.preventDefault();
+    const data = new FormData(cform);
+    const topics = data.getAll('topic');
+    if (!data.get('name')?.trim() || !data.get('email')?.trim() || !data.get('message')?.trim()) {
+      cstat.textContent = 'Name, email and message are required.';
+      return;
+    }
+    const payload = {
+      name: data.get('name'),
+      email: data.get('email'),
+      message: data.get('message'),
+      inquiryType: topics.length ? topics.join('+') : 'general'
+    };
+    console.log('[prototype] would send:', payload);
+    // PRODUCTION: await fetch('/api/contact', {method:'POST',
+    //   headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
+    cstat.textContent = `Prototype only — nothing sent. Logged as "${payload.inquiryType}".`;
+    cform.reset();
+  });
+}
+
+/* ---- interstitial ------------------------------------------------------
+   Fires on scroll depth, NOT page load. An interstitial that covers content
+   on arrival from search is penalised on mobile — this waits until someone
+   has read a screen and a half, which reads as earned rather than thrown.
+------------------------------------------------------------------------ */
+const gate = document.getElementById('gate');
+const GATE_KEY = 'bh:gate-seen';
+const closeGate = () => { if (gate.open) gate.close(); localStorage.setItem(GATE_KEY,'1'); };
+
+if (!localStorage.getItem(GATE_KEY)) {
+  const onScroll = () => {
+    if (window.scrollY > window.innerHeight * 1.5) {
+      window.removeEventListener('scroll', onScroll);
+      gate.showModal();
+    }
+  };
+  window.addEventListener('scroll', onScroll, { passive:true });
+}
+gate.querySelector('[data-gate-close]').addEventListener('click', closeGate);
+gate.addEventListener('close', () => localStorage.setItem(GATE_KEY,'1'));
+gate.addEventListener('click', e => { if (e.target === gate) closeGate(); });
+
+/* ---- RSVP -------------------------------------------------------------
+   PROTOTYPE: localStorage only, so the count is per-browser and fake.
+   PRODUCTION: swap the two marked lines for fetch() against a Cloudflare
+   Worker backed by KV. Page stays fully static; this is progressive
+   enhancement layered on top of prerendered HTML.
+------------------------------------------------------------------------ */
+const RSVP_MIN_DISPLAY = 5; // hide counts below this so a quiet show doesn't look dead
+
+document.querySelectorAll('.rsvp').forEach(btn => {
+  const id    = btn.dataset.show;
+  const out   = btn.querySelector('.rsvp-count');
+  const key   = `rsvp:${id}`;
+  const seed  = Number(localStorage.getItem(`${key}:count`) || 0);
+  let going   = localStorage.getItem(key) === '1';
+  let count   = seed;
+
+  const paint = () => {
+    btn.setAttribute('aria-pressed', String(going));
+    out.textContent = count;
+    out.dataset.low = String(count < RSVP_MIN_DISPLAY);
+  };
+
+  btn.addEventListener('click', async () => {
+    going = !going;
+    count = Math.max(0, count + (going ? 1 : -1));
+    localStorage.setItem(key, going ? '1' : '0');
+    localStorage.setItem(`${key}:count`, String(count));  // PRODUCTION: remove
+    paint();
+    // PRODUCTION: const r = await fetch(`/api/rsvp/${id}`, { method: going ? 'POST' : 'DELETE' });
+    //             count = (await r.json()).count; paint();
+  });
+
+  paint();
+});
+
+/* ===== REVEAL OBSERVER — watches .section AND .site-footer. Footer was
+   omitted once and its contents sat invisible at opacity:0.
+   ------------------------------------------------------------------ */
+const io = new IntersectionObserver(entries => {
+  entries.forEach(e => { if(e.isIntersecting){ e.target.classList.add('is-visible'); io.unobserve(e.target); }});
+}, { threshold:0.16, rootMargin:'0px 0px -8% 0px' });
+document.querySelectorAll('.section, .site-footer').forEach(s => io.observe(s));
+</script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "MusicGroup",
+      "@id": "https://bighollerband.com/#band",
+      "name": "Big Holler",
+      "url": "https://bighollerband.com/",
+      "genre": ["Alt-Country", "Americana"],
+      "foundingLocation": { "@type": "Place", "name": "Richmond, Virginia" }
+    },
+    {
+      "@type": "MusicEvent",
+      "@id": "https://bighollerband.com/#show-2026-09-12",
+      "name": "Big Holler at Hardywood Downtown",
+      "startDate": "2026-09-12T20:00:00-04:00",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+      "performer": { "@id": "https://bighollerband.com/#band" },
+      "location": {
+        "@type": "MusicVenue",
+        "name": "Hardywood Park Craft Brewery — Downtown",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "Richmond",
+          "addressRegion": "VA",
+          "addressCountry": "US"
+        }
+      },
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD",
+        "availability": "https://schema.org/InStock",
+        "url": "https://bighollerband.com/#shows"
+      }
+    }
+  ]
+}
+</script>
+
+</body>
+</html>
